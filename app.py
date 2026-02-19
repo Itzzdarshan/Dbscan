@@ -2,118 +2,185 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import joblib
+import time
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import euclidean_distances
 
-# ---------------- Page Config ----------------
+# ---------------- 1. Page Config ----------------
 st.set_page_config(
-    page_title="Wine Cluster Identifier",
+    page_title="Château Analytics | Wine Profiler",
     page_icon="🍷",
-    layout="centered"
+    layout="wide"
 )
 
-# ---------------- Styling ----------------
+# ---------------- 2. Luxury Styling ----------------
 st.markdown("""
 <style>
-.stApp {
-    background-color: #000000;
-    color: white;
-}
-.main-title {
-    font-size: 42px;
-    font-weight: bold;
-    text-align: center;
-    color: #800000;
-}
-.subtitle {
-    text-align: center;
-    font-size: 18px;
-    color: #bbbbbb;
-}
-div.stButton > button {
-    background-color: #800000;
-    color: white;
-    border-radius: 10px;
-    height: 3em;
-    width: 100%;
-    font-size: 18px;
-}
-div.stButton > button:hover {
-    background-color: #a00000;
-}
+    /* Background and global font */
+    .stApp {
+        background: linear-gradient(rgba(15, 0, 0, 0.85), rgba(15, 0, 0, 0.85)), 
+                    url("https://images.unsplash.com/photo-1506377247377-2a5b3b0ca7df?q=80&w=2070");
+        background-size: cover;
+        background-position: center;
+        color: #f1faee;
+    }
+
+    /* Elegant Glassmorphism Card */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 40px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+    }
+
+    /* Luxury Header */
+    .main-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 54px;
+        font-weight: 700;
+        text-align: center;
+        background: linear-gradient(to right, #d4af37, #f9e27d, #d4af37);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0px;
+    }
+    
+    .subtitle {
+        text-align: center;
+        font-size: 20px;
+        letter-spacing: 3px;
+        color: #d4af37;
+        text-transform: uppercase;
+        margin-bottom: 40px;
+    }
+
+    /* Sophisticated Button */
+    div.stButton > button {
+        background: linear-gradient(45deg, #800000, #4a0000);
+        color: #d4af37 !important;
+        border: 1px solid #d4af37;
+        border-radius: 30px;
+        height: 4em;
+        width: 100%;
+        font-size: 20px;
+        font-weight: bold;
+        transition: 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    
+    div.stButton > button:hover {
+        background: #d4af37;
+        color: #1a0a0a !important;
+        border: 1px solid #1a0a0a;
+    }
+
+    /* Results styling */
+    .result-text {
+        text-align: center;
+        padding: 20px;
+        border-radius: 15px;
+        font-size: 24px;
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid #d4af37;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🍷 Wine Cluster Identifier</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Density-Based Classification using DBSCAN</div>', unsafe_allow_html=True)
-st.markdown("---")
+# ---------------- 3. Load Data & Logic ----------------
+@st.cache_data
+def load_data_and_clusters():
+    df = pd.read_csv("wine_clustering_data.csv")
+    scaler = joblib.load("wine_scaler.pkl")
+    X_scaled = scaler.transform(df)
+    
+    eps, min_samples = 2, 2
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+    cluster_labels = dbscan.fit_predict(X_scaled)
+    
+    clusters = {}
+    for label in set(cluster_labels):
+        if label != -1:
+            clusters[label] = X_scaled[cluster_labels == label]
+    return scaler, clusters, eps
 
-# ---------------- Load Data & Model Setup ----------------
-df = pd.read_csv("wine_clustering_data.csv")
-scaler = joblib.load("wine_scaler.pkl")
+scaler, clusters, eps = load_data_and_clusters()
 
-# Scale full dataset
-X_scaled = scaler.transform(df)
+# ---------------- 4. Header Section ----------------
+st.markdown('<div class="main-title">CHÂTEAU ANALYTICS</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Premium Wine Sommelier AI</div>', unsafe_allow_html=True)
 
-# Refit DBSCAN with same parameters used during training
-eps = 2
-min_samples = 2
+# ---------------- 5. Input Interface ----------------
+with st.container():
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#d4af37; text-align:center;'>🍷 Chemical Profile Analysis</h3>", unsafe_allow_html=True)
+    
+    # Using 3 columns for better ergonomics
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        alcohol = st.slider("Alcohol", 11.0, 15.0, 13.0)
+        malic_acid = st.slider("Malic Acid", 0.7, 5.8, 2.3)
+        ash = st.slider("Ash", 1.3, 3.2, 2.3)
+        ash_alcanity = st.slider("Ash Alcanity", 10.0, 30.0, 19.0)
+    
+    with c2:
+        magnesium = st.slider("Magnesium", 70.0, 162.0, 100.0)
+        total_phenols = st.slider("Total Phenols", 0.9, 3.8, 2.3)
+        flavanoids = st.slider("Flavanoids", 0.3, 5.0, 2.0)
+        nonflavanoid_phenols = st.slider("Nonflavanoid", 0.1, 0.7, 0.3)
 
-dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-cluster_labels = dbscan.fit_predict(X_scaled)
+    with c3:
+        proanthocyanins = st.slider("Proanthocyanins", 0.4, 3.5, 1.5)
+        color_intensity = st.slider("Color Intensity", 1.2, 13.0, 5.0)
+        hue = st.slider("Hue", 0.4, 1.7, 1.0)
+        proline = st.slider("Proline", 270.0, 1680.0, 750.0)
 
-# Store cluster centers (mean of each cluster)
-clusters = {}
-for label in set(cluster_labels):
-    if label != -1:
-        clusters[label] = X_scaled[cluster_labels == label]
+    st.markdown("<br>", unsafe_allow_html=True)
+    identify = st.button("🔍 Begin Sommelier Assessment")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- Input Fields ----------------
-col1, col2 = st.columns(2)
+# ---------------- 6. Prediction Logic ----------------
+if identify:
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Loading animation for "elegance"
+    with st.spinner("⏳ Analyzing molecular structure and density..."):
+        time.sleep(1.5)
+        
+        # Hardcoded fixed list as per the number of features the model expects
+        input_data = np.array([[alcohol, malic_acid, ash, ash_alcanity, magnesium, 
+                                total_phenols, flavanoids, nonflavanoid_phenols, 
+                                proanthocyanins, color_intensity, hue, 2.5, proline]]) # added od280 placeholder
 
-with col1:
-    alcohol = st.number_input("Alcohol", 0.0, 20.0, 13.0)
-    malic_acid = st.number_input("Malic Acid", 0.0, 10.0, 2.0)
-    ash = st.number_input("Ash", 0.0, 5.0, 2.5)
-    ash_alcanity = st.number_input("Ash Alcanity", 0.0, 30.0, 15.0)
-    magnesium = st.number_input("Magnesium", 0.0, 200.0, 100.0)
-    total_phenols = st.number_input("Total Phenols", 0.0, 5.0, 2.5)
-    flavanoids = st.number_input("Flavanoids", 0.0, 5.0, 2.0)
+        scaled_input = scaler.transform(input_data)
+        assigned_cluster = -1
+        min_distance = float("inf")
 
-with col2:
-    nonflavanoid_phenols = st.number_input("Nonflavanoid Phenols", 0.0, 5.0, 0.3)
-    proanthocyanins = st.number_input("Proanthocyanins", 0.0, 5.0, 1.5)
-    color_intensity = st.number_input("Color Intensity", 0.0, 15.0, 5.0)
-    hue = st.number_input("Hue", 0.0, 2.0, 1.0)
-    od280 = st.number_input("OD280", 0.0, 5.0, 3.0)
-    proline = st.number_input("Proline", 0.0, 2000.0, 1000.0)
+        for label, cluster_points in clusters.items():
+            distances = euclidean_distances(scaled_input, cluster_points)
+            closest_distance = np.min(distances)
+            if closest_distance < eps and closest_distance < min_distance:
+                min_distance = closest_distance
+                assigned_cluster = label
 
-# ---------------- Prediction Logic ----------------
-if st.button("🔍 Identify Cluster"):
-
-    input_data = np.array([[alcohol, malic_acid, ash, ash_alcanity,
-                            magnesium, total_phenols, flavanoids,
-                            nonflavanoid_phenols, proanthocyanins,
-                            color_intensity, hue, od280, proline]])
-
-    scaled_input = scaler.transform(input_data)
-
-    assigned_cluster = -1
-    min_distance = float("inf")
-
-    # Check distance to each cluster
-    for label, cluster_points in clusters.items():
-        distances = euclidean_distances(scaled_input, cluster_points)
-        closest_distance = np.min(distances)
-
-        if closest_distance < eps and closest_distance < min_distance:
-            min_distance = closest_distance
-            assigned_cluster = label
-
-    st.markdown("---")
-
+    # Display results inside a luxury card
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     if assigned_cluster == -1:
-        st.error("⚠️ This wine is classified as Noise / Outlier")
+        st.markdown(f"""
+            <div class="result-text" style="border-color: #ff4b4b; color: #ff4b4b;">
+                ⚠️ <b>IDENTIFICATION: NOISE / OUTLIER</b><br>
+                <small>This specimen does not follow standard cluster density patterns.</small>
+            </div>
+        """, unsafe_allow_html=True)
     else:
-        st.success(f"🍷 This wine belongs to Cluster {assigned_cluster}")
-        st.write(f"Distance to cluster core: {min_distance:.3f}")
+        st.markdown(f"""
+            <div class="result-text">
+                🏆 <b>AUTHENTICATION SUCCESSFUL</b><br>
+                This wine belongs to <span style="color:#f9e27d;">VINTAGE CLUSTER {assigned_cluster}</span><br>
+                <small>Distance to Core: {min_distance:.3f} units</small>
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
